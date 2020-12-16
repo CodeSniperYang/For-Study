@@ -1,0 +1,322 @@
+// 计科181杨毅 2018213456
+
+/*
+    当 pthread_mutex_lock() 返回时，该互斥锁已被锁定。调用线程是该互斥锁的属主。
+    如果该互斥锁已被另一个线程锁定和拥有，则调用线程将阻塞，直到该互斥锁变为可用为止。
+*/
+
+/*
+    信号灯转换：转换时也需要加互斥锁。转换后需要判断是否已经发生转换，已经发生则跳过
+*/
+#include <iostream>
+#include <windows.h>
+#include <pthread.h>
+#include <stdio.h>
+using namespace std;
+const int carNumber = 20;
+
+int time = 0; //时间线
+int t1=3,t2=5,t3=1; // 通过时间，等待时间，信号灯转换时间
+int traffic_lights = 0; //每通过三或四辆车，灯光转换一次
+
+int serial = 0; // 序列号，最后序列号应该为40
+
+// 在某个方向的车，只允许一辆车通过路口
+pthread_mutex_t mutexE = PTHREAD_MUTEX_INITIALIZER; //东边车辆互斥锁
+pthread_mutex_t mutexW = PTHREAD_MUTEX_INITIALIZER; //西边车辆互斥锁
+pthread_mutex_t mutexN = PTHREAD_MUTEX_INITIALIZER; //北边车辆互斥锁
+pthread_mutex_t mutexS = PTHREAD_MUTEX_INITIALIZER; //南边车辆互斥锁
+pthread_mutex_t mutexOutput = PTHREAD_MUTEX_INITIALIZER; //输出 不然输出会交替
+pthread_mutex_t mutexchange = PTHREAD_MUTEX_INITIALIZER; //信号灯互斥锁
+
+// EW或NS方向条件变量，用来模拟红绿灯的转换
+pthread_cond_t WE = PTHREAD_COND_INITIALIZER; //东西方向条件变量
+pthread_cond_t NS = PTHREAD_COND_INITIALIZER; //南北方向条件变量
+bool boolWE = false; //结合while循环使用，此变量为true相当于东西方向绿灯
+bool boolNS = true; //结合while循环使用，此变量为true相当于南北方向绿灯
+int numberN=0,numberS=0,numberW=0,numberE=0; //表示某个方向有多少辆车驶出路口
+
+// 信号灯转换函数
+void change(pthread_cond_t &direction,bool &light1,bool &light2) {
+    /*
+        将信号灯暂时变为红灯，原因：
+        存在一种情况，如果正方向一辆车刚好通过路口，
+        反方向的车正在经过路口并且没有通过路口，
+        这时候需要将正方向的灯变为红灯，防止下一辆车经过路口
+    */
+    //灯光转换
+    light1 = false;
+    light2 = true;
+
+    //输出信息
+    pthread_mutex_lock( &mutexOutput );
+    printf("The signal light has changed:");
+    if(boolWE)  printf("Traffic in the east-west direction is allowed to through, No north-south. \n");
+    else        printf("Traffic in the north-south direction is allowed to through, No east-west. \n");
+    pthread_mutex_unlock( &mutexOutput );
+
+    // 唤醒被阻塞的进程
+    pthread_cond_broadcast( &direction );
+}
+
+//东方向车辆进行函数
+void *crosingE( void *arg ) {
+    auto id = pthread_self();
+    pthread_mutex_lock( &mutexE ); //获得互斥锁
+
+    //东西方向为红灯则挂起，等待唤醒。唤醒条件为信号灯转换为绿灯
+    while(!boolWE){
+        pthread_cond_wait( &WE, &mutexE );
+    }
+
+    time +=t1; //通过时间为3s
+    traffic_lights ++;
+    numberE ++;
+    // 输出
+    pthread_mutex_lock( &mutexOutput );
+    printf("%d ",++serial);
+    printf("A car in the East passed the crossing and the id is:E%zu,current time:%d\n",id,time);
+    pthread_mutex_unlock( &mutexOutput );
+
+    // 车辆通过后，判断信号灯是否应该发生变化
+    pthread_mutex_lock( &mutexchange );
+    if( (traffic_lights%3==0 && boolWE) || (numberE==10) ) change(NS,boolWE,boolNS);
+    pthread_mutex_unlock( &mutexchange );
+
+    time +=t2;
+    pthread_mutex_unlock( &mutexE );//解锁
+    return nullptr;
+}
+
+//西方向车辆进行函数
+void *crosingW( void *arg ) {
+    auto id = pthread_self();
+    pthread_mutex_lock( &mutexW ); //获得互斥锁
+
+    //东西方向为红灯则挂起，等待唤醒。唤醒条件为信号灯转换为绿灯
+    while(!boolWE){
+        pthread_cond_wait( &WE, &mutexW );
+    }
+
+    time +=t1; //通过时间为3s
+    traffic_lights ++;
+    numberW ++;
+    // 输出
+    pthread_mutex_lock( &mutexOutput );
+    printf("%d ",++serial);
+    printf("A car in the West passed the crossing and the id is:W%zu,current time:%d\n",id,time);
+    pthread_mutex_unlock( &mutexOutput );
+
+    // 车辆通过后，判断信号灯是否应该发生变化
+    pthread_mutex_lock( &mutexchange );
+    if( (traffic_lights%3==0 && boolWE) || (numberW==10) ) change(NS,boolWE,boolNS);
+    pthread_mutex_unlock( &mutexchange );
+
+    time +=t2;
+    pthread_mutex_unlock( &mutexW );//解锁
+
+    return nullptr;
+}
+//北方向车辆进行函数
+void *crosingN( void *arg ) {
+    auto id = pthread_self();
+    pthread_mutex_lock( &mutexN ); //获得互斥锁
+
+    //南北方向为红灯则挂起，等待唤醒。唤醒条件为信号灯转换为绿灯
+    while(!boolNS){
+        pthread_cond_wait( &NS, &mutexN );
+    }
+
+    time +=t1; //通过时间为3s
+    traffic_lights ++;
+    numberN ++;
+    // 输出
+    pthread_mutex_lock( &mutexOutput );
+    printf("%d ",++serial);
+    printf("A car in the North passed the crossing and the id is:N%zu,current time:%d\n",id,time);
+    pthread_mutex_unlock( &mutexOutput );
+
+    // 车辆通过后，判断信号灯是否应该发生变化
+    pthread_mutex_lock( &mutexchange );
+    if( (traffic_lights%3==0 && boolNS) || (numberN==10) ) change(WE,boolNS,boolWE);
+    pthread_mutex_unlock( &mutexchange );
+
+    time +=t2;
+    pthread_mutex_unlock( &mutexN );//解锁
+
+    return nullptr;
+}
+//南方向车辆进行函数
+void *crosingS( void *arg ) {
+    auto id = pthread_self();
+    pthread_mutex_lock( &mutexS ); //获得互斥锁
+
+    //南北方向为红灯则挂起，等待唤醒。唤醒条件为信号灯转换为绿灯
+    while(!boolNS){
+        pthread_cond_wait( &NS, &mutexS );
+    }
+
+    time +=t1; //通过时间为3s
+    traffic_lights ++;
+    numberS ++;
+    // 输出
+    pthread_mutex_lock( &mutexOutput );
+    printf("%d ",++serial);
+    printf("A car in the South passed the crossing and the id is:N%zu,current time:%d\n",id,time);
+    pthread_mutex_unlock( &mutexOutput );
+
+    // 车辆通过后，判断信号灯是否应该发生变化
+    pthread_mutex_lock( &mutexchange );
+    if( (traffic_lights%3==0 && boolNS)||(numberS==10) ) change(WE,boolNS,boolWE);
+    pthread_mutex_unlock( &mutexchange );
+
+    time +=t2;
+    pthread_mutex_unlock( &mutexS );//解锁
+
+    return nullptr;
+}
+
+
+
+
+int main()
+{
+    //创建四个方向的进程,表示在某个方向将有10辆车通过路口
+    pthread_t carE[carNumber],carW[carNumber],carN[carNumber],carS[carNumber];
+
+    for( int i = 0; i < carNumber; i++ ) {
+        pthread_create( &carE[i], NULL, crosingE, NULL ); //东边的车运行函数
+        pthread_create( &carW[i], NULL, crosingW, NULL ); //西边的车运行函数
+        pthread_create( &carN[i], NULL, crosingN, NULL ); //北边的车运行函数
+        pthread_create( &carS[i], NULL, crosingS, NULL ); //南边的车运行函数
+    }
+
+    Sleep(10);
+    for( int i = 0; i < carNumber; i++ ) {
+        pthread_join( carE[i], NULL );
+        pthread_join( carW[i], NULL );
+        pthread_join( carN[i], NULL );
+        pthread_join( carS[i], NULL );
+    }
+    return 0;
+}
+
+
+/*
+运行结果示例：
+1 A car in the North passed the crossing and the id is:N4,current time:6
+2 A car in the South passed the crossing and the id is:N9,current time:14
+3 A car in the North passed the crossing and the id is:N12,current time:14
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+4 A car in the East passed the crossing and the id is:E78,current time:30
+5 A car in the West passed the crossing and the id is:W67,current time:38
+6 A car in the East passed the crossing and the id is:E74,current time:38
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+7 A car in the North passed the crossing and the id is:N72,current time:54
+8 A car in the South passed the crossing and the id is:N73,current time:62
+9 A car in the North passed the crossing and the id is:N64,current time:62
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+10 A car in the East passed the crossing and the id is:E22,current time:78
+11 A car in the West passed the crossing and the id is:W3,current time:86
+12 A car in the East passed the crossing and the id is:E2,current time:86
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+13 A car in the North passed the crossing and the id is:N24,current time:102
+14 A car in the South passed the crossing and the id is:N13,current time:110
+15 A car in the North passed the crossing and the id is:N68,current time:110
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+16 A car in the West passed the crossing and the id is:W63,current time:126
+17 A car in the East passed the crossing and the id is:E66,current time:134
+18 A car in the West passed the crossing and the id is:W71,current time:134
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+19 A car in the South passed the crossing and the id is:N69,current time:150
+20 A car in the North passed the crossing and the id is:N48,current time:158
+21 A car in the South passed the crossing and the id is:N77,current time:158
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+22 A car in the West passed the crossing and the id is:W7,current time:174
+23 A car in the East passed the crossing and the id is:E26,current time:182
+24 A car in the West passed the crossing and the id is:W15,current time:182
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+25 A car in the South passed the crossing and the id is:N17,current time:198
+26 A car in the North passed the crossing and the id is:N80,current time:206
+27 A car in the South passed the crossing and the id is:N21,current time:206
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+28 A car in the East passed the crossing and the id is:E70,current time:222
+29 A car in the West passed the crossing and the id is:W59,current time:230
+30 A car in the East passed the crossing and the id is:E6,current time:230
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+31 A car in the South passed the crossing and the id is:N65,current time:246
+32 A car in the North passed the crossing and the id is:N56,current time:254
+33 A car in the South passed the crossing and the id is:N49,current time:254
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+34 A car in the West passed the crossing and the id is:W27,current time:270
+35 A car in the East passed the crossing and the id is:E10,current time:278
+36 A car in the West passed the crossing and the id is:W23,current time:278
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+37 A car in the South passed the crossing and the id is:N5,current time:294
+38 A car in the North passed the crossing and the id is:N8,current time:294
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+39 A car in the East passed the crossing and the id is:E54,current time:305
+40 A car in the West passed the crossing and the id is:W43,current time:305
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+41 A car in the North passed the crossing and the id is:N52,current time:321
+42 A car in the South passed the crossing and the id is:N57,current time:321
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+43 A car in the West passed the crossing and the id is:W39,current time:342
+44 A car in the East passed the crossing and the id is:E18,current time:350
+45 A car in the West passed the crossing and the id is:W19,current time:350
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+46 A car in the South passed the crossing and the id is:N25,current time:366
+47 A car in the North passed the crossing and the id is:N36,current time:374
+48 A car in the South passed the crossing and the id is:N45,current time:374
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+49 A car in the West passed the crossing and the id is:W47,current time:390
+50 A car in the East passed the crossing and the id is:E46,current time:398
+51 A car in the West passed the crossing and the id is:W51,current time:398
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+52 A car in the North passed the crossing and the id is:N20,current time:414
+53 A car in the South passed the crossing and the id is:N81,current time:422
+54 A car in the North passed the crossing and the id is:N28,current time:422
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+55 A car in the West passed the crossing and the id is:W11,current time:438
+56 A car in the East passed the crossing and the id is:E30,current time:446
+57 A car in the West passed the crossing and the id is:W31,current time:446
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+58 A car in the North passed the crossing and the id is:N76,current time:462
+59 A car in the South passed the crossing and the id is:N29,current time:470
+60 A car in the North passed the crossing and the id is:N32,current time:470
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+61 A car in the East passed the crossing and the id is:E42,current time:486
+62 A car in the West passed the crossing and the id is:W75,current time:494
+63 A car in the East passed the crossing and the id is:E62,current time:494
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+64 A car in the North passed the crossing and the id is:N44,current time:510
+65 A car in the South passed the crossing and the id is:N61,current time:518
+66 A car in the North passed the crossing and the id is:N16,current time:518
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+67 A car in the East passed the crossing and the id is:E38,current time:534
+68 A car in the West passed the crossing and the id is:W55,current time:542
+69 A car in the East passed the crossing and the id is:E58,current time:542
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+70 A car in the South passed the crossing and the id is:N33,current time:558
+71 A car in the North passed the crossing and the id is:N40,current time:566
+72 A car in the South passed the crossing and the id is:N37,current time:566
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+73 A car in the East passed the crossing and the id is:E14,current time:582
+74 A car in the West passed the crossing and the id is:W79,current time:590
+75 A car in the East passed the crossing and the id is:E50,current time:590
+The signal light has changed:Traffic in the north-south direction is allowed to through, No east-west.
+76 A car in the South passed the crossing and the id is:N41,current time:606
+77 A car in the North passed the crossing and the id is:N60,current time:614
+78 A car in the South passed the crossing and the id is:N53,current time:614
+The signal light has changed:Traffic in the east-west direction is allowed to through, No north-south.
+79 A car in the East passed the crossing and the id is:E34,current time:630
+80 A car in the West passed the crossing and the id is:W35,current time:635
+
+Process returned 0 (0x0)   execution time : 0.291 s
+Press any key to continue.
+
+
+
+*/
