@@ -1,12 +1,10 @@
-// ¼Æ¿Æ181ÑîÒã 2018213456
-
 /*
-    µ± pthread_mutex_lock() ·µ»ØÊ±£¬¸Ã»¥³âËøÒÑ±»Ëø¶¨¡£µ÷ÓÃÏß³ÌÊÇ¸Ã»¥³âËøµÄÊôÖ÷¡£
-    Èç¹û¸Ã»¥³âËøÒÑ±»ÁíÒ»¸öÏß³ÌËø¶¨ºÍÓµÓĞ£¬Ôòµ÷ÓÃÏß³Ì½«×èÈû£¬Ö±µ½¸Ã»¥³âËø±äÎª¿ÉÓÃÎªÖ¹¡£
+    å½“ pthread_mutex_lock() è¿”å›æ—¶ï¼Œè¯¥äº’æ–¥é”å·²è¢«é”å®šã€‚è°ƒç”¨çº¿ç¨‹æ˜¯è¯¥äº’æ–¥é”çš„å±ä¸»ã€‚
+    å¦‚æœè¯¥äº’æ–¥é”å·²è¢«å¦ä¸€ä¸ªçº¿ç¨‹é”å®šå’Œæ‹¥æœ‰ï¼Œåˆ™è°ƒç”¨çº¿ç¨‹å°†é˜»å¡ï¼Œç›´åˆ°è¯¥äº’æ–¥é”å˜ä¸ºå¯ç”¨ä¸ºæ­¢ã€‚
 */
 
 /*
-    ĞÅºÅµÆ×ª»»£º×ª»»Ê±Ò²ĞèÒª¼Ó»¥³âËø¡£×ª»»ºóĞèÒªÅĞ¶ÏÊÇ·ñÒÑ¾­·¢Éú×ª»»£¬ÒÑ¾­·¢ÉúÔòÌø¹ı
+    ä¿¡å·ç¯è½¬æ¢ï¼šè½¬æ¢æ—¶ä¹Ÿéœ€è¦åŠ äº’æ–¥é”ã€‚è½¬æ¢åéœ€è¦åˆ¤æ–­æ˜¯å¦å·²ç»å‘ç”Ÿè½¬æ¢ï¼Œå·²ç»å‘ç”Ÿåˆ™è·³è¿‡
 */
 #include <iostream>
 #include <windows.h>
@@ -15,163 +13,163 @@
 using namespace std;
 const int carNumber = 20;
 
-int time = 0; //Ê±¼äÏß
-int t1=3,t2=5,t3=1; // Í¨¹ıÊ±¼ä£¬µÈ´ıÊ±¼ä£¬ĞÅºÅµÆ×ª»»Ê±¼ä
-int traffic_lights = 0; //Ã¿Í¨¹ıÈı»òËÄÁ¾³µ£¬µÆ¹â×ª»»Ò»´Î
+int time = 0; //æ—¶é—´çº¿
+int t1=3,t2=5,t3=1; // é€šè¿‡æ—¶é—´ï¼Œç­‰å¾…æ—¶é—´ï¼Œä¿¡å·ç¯è½¬æ¢æ—¶é—´
+int traffic_lights = 0; //æ¯é€šè¿‡ä¸‰æˆ–å››è¾†è½¦ï¼Œç¯å…‰è½¬æ¢ä¸€æ¬¡
 
-int serial = 0; // ĞòÁĞºÅ£¬×îºóĞòÁĞºÅÓ¦¸ÃÎª40
+int serial = 0; // åºåˆ—å·ï¼Œæœ€ååºåˆ—å·åº”è¯¥ä¸º40
 
-// ÔÚÄ³¸ö·½ÏòµÄ³µ£¬Ö»ÔÊĞíÒ»Á¾³µÍ¨¹ıÂ·¿Ú
-pthread_mutex_t mutexE = PTHREAD_MUTEX_INITIALIZER; //¶«±ß³µÁ¾»¥³âËø
-pthread_mutex_t mutexW = PTHREAD_MUTEX_INITIALIZER; //Î÷±ß³µÁ¾»¥³âËø
-pthread_mutex_t mutexN = PTHREAD_MUTEX_INITIALIZER; //±±±ß³µÁ¾»¥³âËø
-pthread_mutex_t mutexS = PTHREAD_MUTEX_INITIALIZER; //ÄÏ±ß³µÁ¾»¥³âËø
-pthread_mutex_t mutexOutput = PTHREAD_MUTEX_INITIALIZER; //Êä³ö ²»È»Êä³ö»á½»Ìæ
-pthread_mutex_t mutexchange = PTHREAD_MUTEX_INITIALIZER; //ĞÅºÅµÆ»¥³âËø
+// åœ¨æŸä¸ªæ–¹å‘çš„è½¦ï¼Œåªå…è®¸ä¸€è¾†è½¦é€šè¿‡è·¯å£
+pthread_mutex_t mutexE = PTHREAD_MUTEX_INITIALIZER; //ä¸œè¾¹è½¦è¾†äº’æ–¥é”
+pthread_mutex_t mutexW = PTHREAD_MUTEX_INITIALIZER; //è¥¿è¾¹è½¦è¾†äº’æ–¥é”
+pthread_mutex_t mutexN = PTHREAD_MUTEX_INITIALIZER; //åŒ—è¾¹è½¦è¾†äº’æ–¥é”
+pthread_mutex_t mutexS = PTHREAD_MUTEX_INITIALIZER; //å—è¾¹è½¦è¾†äº’æ–¥é”
+pthread_mutex_t mutexOutput = PTHREAD_MUTEX_INITIALIZER; //è¾“å‡º ä¸ç„¶è¾“å‡ºä¼šäº¤æ›¿
+pthread_mutex_t mutexchange = PTHREAD_MUTEX_INITIALIZER; //ä¿¡å·ç¯äº’æ–¥é”
 
-// EW»òNS·½ÏòÌõ¼ş±äÁ¿£¬ÓÃÀ´Ä£ÄâºìÂÌµÆµÄ×ª»»
-pthread_cond_t WE = PTHREAD_COND_INITIALIZER; //¶«Î÷·½ÏòÌõ¼ş±äÁ¿
-pthread_cond_t NS = PTHREAD_COND_INITIALIZER; //ÄÏ±±·½ÏòÌõ¼ş±äÁ¿
-bool boolWE = false; //½áºÏwhileÑ­»·Ê¹ÓÃ£¬´Ë±äÁ¿ÎªtrueÏàµ±ÓÚ¶«Î÷·½ÏòÂÌµÆ
-bool boolNS = true; //½áºÏwhileÑ­»·Ê¹ÓÃ£¬´Ë±äÁ¿ÎªtrueÏàµ±ÓÚÄÏ±±·½ÏòÂÌµÆ
-int numberN=0,numberS=0,numberW=0,numberE=0; //±íÊ¾Ä³¸ö·½ÏòÓĞ¶àÉÙÁ¾³µÊ»³öÂ·¿Ú
+// EWæˆ–NSæ–¹å‘æ¡ä»¶å˜é‡ï¼Œç”¨æ¥æ¨¡æ‹Ÿçº¢ç»¿ç¯çš„è½¬æ¢
+pthread_cond_t WE = PTHREAD_COND_INITIALIZER; //ä¸œè¥¿æ–¹å‘æ¡ä»¶å˜é‡
+pthread_cond_t NS = PTHREAD_COND_INITIALIZER; //å—åŒ—æ–¹å‘æ¡ä»¶å˜é‡
+bool boolWE = false; //ç»“åˆwhileå¾ªç¯ä½¿ç”¨ï¼Œæ­¤å˜é‡ä¸ºtrueç›¸å½“äºä¸œè¥¿æ–¹å‘ç»¿ç¯
+bool boolNS = true; //ç»“åˆwhileå¾ªç¯ä½¿ç”¨ï¼Œæ­¤å˜é‡ä¸ºtrueç›¸å½“äºå—åŒ—æ–¹å‘ç»¿ç¯
+int numberN=0,numberS=0,numberW=0,numberE=0; //è¡¨ç¤ºæŸä¸ªæ–¹å‘æœ‰å¤šå°‘è¾†è½¦é©¶å‡ºè·¯å£
 
-// ĞÅºÅµÆ×ª»»º¯Êı
+// ä¿¡å·ç¯è½¬æ¢å‡½æ•°
 void change(pthread_cond_t &direction,bool &light1,bool &light2) {
     /*
-        ½«ĞÅºÅµÆÔİÊ±±äÎªºìµÆ£¬Ô­Òò£º
-        ´æÔÚÒ»ÖÖÇé¿ö£¬Èç¹ûÕı·½ÏòÒ»Á¾³µ¸ÕºÃÍ¨¹ıÂ·¿Ú£¬
-        ·´·½ÏòµÄ³µÕıÔÚ¾­¹ıÂ·¿Ú²¢ÇÒÃ»ÓĞÍ¨¹ıÂ·¿Ú£¬
-        ÕâÊ±ºòĞèÒª½«Õı·½ÏòµÄµÆ±äÎªºìµÆ£¬·ÀÖ¹ÏÂÒ»Á¾³µ¾­¹ıÂ·¿Ú
+        å°†ä¿¡å·ç¯æš‚æ—¶å˜ä¸ºçº¢ç¯ï¼ŒåŸå› ï¼š
+        å­˜åœ¨ä¸€ç§æƒ…å†µï¼Œå¦‚æœæ­£æ–¹å‘ä¸€è¾†è½¦åˆšå¥½é€šè¿‡è·¯å£ï¼Œ
+        åæ–¹å‘çš„è½¦æ­£åœ¨ç»è¿‡è·¯å£å¹¶ä¸”æ²¡æœ‰é€šè¿‡è·¯å£ï¼Œ
+        è¿™æ—¶å€™éœ€è¦å°†æ­£æ–¹å‘çš„ç¯å˜ä¸ºçº¢ç¯ï¼Œé˜²æ­¢ä¸‹ä¸€è¾†è½¦ç»è¿‡è·¯å£
     */
-    //µÆ¹â×ª»»
+    //ç¯å…‰è½¬æ¢
     light1 = false;
     light2 = true;
 
-    //Êä³öĞÅÏ¢
+    //è¾“å‡ºä¿¡æ¯
     pthread_mutex_lock( &mutexOutput );
     printf("The signal light has changed:");
     if(boolWE)  printf("Traffic in the east-west direction is allowed to through, No north-south. \n");
     else        printf("Traffic in the north-south direction is allowed to through, No east-west. \n");
     pthread_mutex_unlock( &mutexOutput );
 
-    // »½ĞÑ±»×èÈûµÄ½ø³Ì
+    // å”¤é†’è¢«é˜»å¡çš„è¿›ç¨‹
     pthread_cond_broadcast( &direction );
 }
 
-//¶«·½Ïò³µÁ¾½øĞĞº¯Êı
+//ä¸œæ–¹å‘è½¦è¾†è¿›è¡Œå‡½æ•°
 void *crosingE( void *arg ) {
     auto id = pthread_self();
-    pthread_mutex_lock( &mutexE ); //»ñµÃ»¥³âËø
+    pthread_mutex_lock( &mutexE ); //è·å¾—äº’æ–¥é”
 
-    //¶«Î÷·½ÏòÎªºìµÆÔò¹ÒÆğ£¬µÈ´ı»½ĞÑ¡£»½ĞÑÌõ¼şÎªĞÅºÅµÆ×ª»»ÎªÂÌµÆ
+    //ä¸œè¥¿æ–¹å‘ä¸ºçº¢ç¯åˆ™æŒ‚èµ·ï¼Œç­‰å¾…å”¤é†’ã€‚å”¤é†’æ¡ä»¶ä¸ºä¿¡å·ç¯è½¬æ¢ä¸ºç»¿ç¯
     while(!boolWE){
         pthread_cond_wait( &WE, &mutexE );
     }
 
-    time +=t1; //Í¨¹ıÊ±¼äÎª3s
+    time +=t1; //é€šè¿‡æ—¶é—´ä¸º3s
     traffic_lights ++;
     numberE ++;
-    // Êä³ö
+    // è¾“å‡º
     pthread_mutex_lock( &mutexOutput );
     printf("%d ",++serial);
     printf("A car in the East passed the crossing and the id is:E%zu,current time:%d\n",id,time);
     pthread_mutex_unlock( &mutexOutput );
 
-    // ³µÁ¾Í¨¹ıºó£¬ÅĞ¶ÏĞÅºÅµÆÊÇ·ñÓ¦¸Ã·¢Éú±ä»¯
+    // è½¦è¾†é€šè¿‡åï¼Œåˆ¤æ–­ä¿¡å·ç¯æ˜¯å¦åº”è¯¥å‘ç”Ÿå˜åŒ–
     pthread_mutex_lock( &mutexchange );
     if( (traffic_lights%3==0 && boolWE) || (numberE==10) ) change(NS,boolWE,boolNS);
     pthread_mutex_unlock( &mutexchange );
 
     time +=t2;
-    pthread_mutex_unlock( &mutexE );//½âËø
+    pthread_mutex_unlock( &mutexE );//è§£é”
     return nullptr;
 }
 
-//Î÷·½Ïò³µÁ¾½øĞĞº¯Êı
+//è¥¿æ–¹å‘è½¦è¾†è¿›è¡Œå‡½æ•°
 void *crosingW( void *arg ) {
     auto id = pthread_self();
-    pthread_mutex_lock( &mutexW ); //»ñµÃ»¥³âËø
+    pthread_mutex_lock( &mutexW ); //è·å¾—äº’æ–¥é”
 
-    //¶«Î÷·½ÏòÎªºìµÆÔò¹ÒÆğ£¬µÈ´ı»½ĞÑ¡£»½ĞÑÌõ¼şÎªĞÅºÅµÆ×ª»»ÎªÂÌµÆ
+    //ä¸œè¥¿æ–¹å‘ä¸ºçº¢ç¯åˆ™æŒ‚èµ·ï¼Œç­‰å¾…å”¤é†’ã€‚å”¤é†’æ¡ä»¶ä¸ºä¿¡å·ç¯è½¬æ¢ä¸ºç»¿ç¯
     while(!boolWE){
         pthread_cond_wait( &WE, &mutexW );
     }
 
-    time +=t1; //Í¨¹ıÊ±¼äÎª3s
+    time +=t1; //é€šè¿‡æ—¶é—´ä¸º3s
     traffic_lights ++;
     numberW ++;
-    // Êä³ö
+    // è¾“å‡º
     pthread_mutex_lock( &mutexOutput );
     printf("%d ",++serial);
     printf("A car in the West passed the crossing and the id is:W%zu,current time:%d\n",id,time);
     pthread_mutex_unlock( &mutexOutput );
 
-    // ³µÁ¾Í¨¹ıºó£¬ÅĞ¶ÏĞÅºÅµÆÊÇ·ñÓ¦¸Ã·¢Éú±ä»¯
+    // è½¦è¾†é€šè¿‡åï¼Œåˆ¤æ–­ä¿¡å·ç¯æ˜¯å¦åº”è¯¥å‘ç”Ÿå˜åŒ–
     pthread_mutex_lock( &mutexchange );
     if( (traffic_lights%3==0 && boolWE) || (numberW==10) ) change(NS,boolWE,boolNS);
     pthread_mutex_unlock( &mutexchange );
 
     time +=t2;
-    pthread_mutex_unlock( &mutexW );//½âËø
+    pthread_mutex_unlock( &mutexW );//è§£é”
 
     return nullptr;
 }
-//±±·½Ïò³µÁ¾½øĞĞº¯Êı
+//åŒ—æ–¹å‘è½¦è¾†è¿›è¡Œå‡½æ•°
 void *crosingN( void *arg ) {
     auto id = pthread_self();
-    pthread_mutex_lock( &mutexN ); //»ñµÃ»¥³âËø
+    pthread_mutex_lock( &mutexN ); //è·å¾—äº’æ–¥é”
 
-    //ÄÏ±±·½ÏòÎªºìµÆÔò¹ÒÆğ£¬µÈ´ı»½ĞÑ¡£»½ĞÑÌõ¼şÎªĞÅºÅµÆ×ª»»ÎªÂÌµÆ
+    //å—åŒ—æ–¹å‘ä¸ºçº¢ç¯åˆ™æŒ‚èµ·ï¼Œç­‰å¾…å”¤é†’ã€‚å”¤é†’æ¡ä»¶ä¸ºä¿¡å·ç¯è½¬æ¢ä¸ºç»¿ç¯
     while(!boolNS){
         pthread_cond_wait( &NS, &mutexN );
     }
 
-    time +=t1; //Í¨¹ıÊ±¼äÎª3s
+    time +=t1; //é€šè¿‡æ—¶é—´ä¸º3s
     traffic_lights ++;
     numberN ++;
-    // Êä³ö
+    // è¾“å‡º
     pthread_mutex_lock( &mutexOutput );
     printf("%d ",++serial);
     printf("A car in the North passed the crossing and the id is:N%zu,current time:%d\n",id,time);
     pthread_mutex_unlock( &mutexOutput );
 
-    // ³µÁ¾Í¨¹ıºó£¬ÅĞ¶ÏĞÅºÅµÆÊÇ·ñÓ¦¸Ã·¢Éú±ä»¯
+    // è½¦è¾†é€šè¿‡åï¼Œåˆ¤æ–­ä¿¡å·ç¯æ˜¯å¦åº”è¯¥å‘ç”Ÿå˜åŒ–
     pthread_mutex_lock( &mutexchange );
     if( (traffic_lights%3==0 && boolNS) || (numberN==10) ) change(WE,boolNS,boolWE);
     pthread_mutex_unlock( &mutexchange );
 
     time +=t2;
-    pthread_mutex_unlock( &mutexN );//½âËø
+    pthread_mutex_unlock( &mutexN );//è§£é”
 
     return nullptr;
 }
-//ÄÏ·½Ïò³µÁ¾½øĞĞº¯Êı
+//å—æ–¹å‘è½¦è¾†è¿›è¡Œå‡½æ•°
 void *crosingS( void *arg ) {
     auto id = pthread_self();
-    pthread_mutex_lock( &mutexS ); //»ñµÃ»¥³âËø
+    pthread_mutex_lock( &mutexS ); //è·å¾—äº’æ–¥é”
 
-    //ÄÏ±±·½ÏòÎªºìµÆÔò¹ÒÆğ£¬µÈ´ı»½ĞÑ¡£»½ĞÑÌõ¼şÎªĞÅºÅµÆ×ª»»ÎªÂÌµÆ
+    //å—åŒ—æ–¹å‘ä¸ºçº¢ç¯åˆ™æŒ‚èµ·ï¼Œç­‰å¾…å”¤é†’ã€‚å”¤é†’æ¡ä»¶ä¸ºä¿¡å·ç¯è½¬æ¢ä¸ºç»¿ç¯
     while(!boolNS){
         pthread_cond_wait( &NS, &mutexS );
     }
 
-    time +=t1; //Í¨¹ıÊ±¼äÎª3s
+    time +=t1; //é€šè¿‡æ—¶é—´ä¸º3s
     traffic_lights ++;
     numberS ++;
-    // Êä³ö
+    // è¾“å‡º
     pthread_mutex_lock( &mutexOutput );
     printf("%d ",++serial);
     printf("A car in the South passed the crossing and the id is:N%zu,current time:%d\n",id,time);
     pthread_mutex_unlock( &mutexOutput );
 
-    // ³µÁ¾Í¨¹ıºó£¬ÅĞ¶ÏĞÅºÅµÆÊÇ·ñÓ¦¸Ã·¢Éú±ä»¯
+    // è½¦è¾†é€šè¿‡åï¼Œåˆ¤æ–­ä¿¡å·ç¯æ˜¯å¦åº”è¯¥å‘ç”Ÿå˜åŒ–
     pthread_mutex_lock( &mutexchange );
     if( (traffic_lights%3==0 && boolNS)||(numberS==10) ) change(WE,boolNS,boolWE);
     pthread_mutex_unlock( &mutexchange );
 
     time +=t2;
-    pthread_mutex_unlock( &mutexS );//½âËø
+    pthread_mutex_unlock( &mutexS );//è§£é”
 
     return nullptr;
 }
@@ -181,14 +179,14 @@ void *crosingS( void *arg ) {
 
 int main()
 {
-    //´´½¨ËÄ¸ö·½ÏòµÄ½ø³Ì,±íÊ¾ÔÚÄ³¸ö·½Ïò½«ÓĞ10Á¾³µÍ¨¹ıÂ·¿Ú
+    //åˆ›å»ºå››ä¸ªæ–¹å‘çš„è¿›ç¨‹,è¡¨ç¤ºåœ¨æŸä¸ªæ–¹å‘å°†æœ‰10è¾†è½¦é€šè¿‡è·¯å£
     pthread_t carE[carNumber],carW[carNumber],carN[carNumber],carS[carNumber];
 
     for( int i = 0; i < carNumber; i++ ) {
-        pthread_create( &carE[i], NULL, crosingE, NULL ); //¶«±ßµÄ³µÔËĞĞº¯Êı
-        pthread_create( &carW[i], NULL, crosingW, NULL ); //Î÷±ßµÄ³µÔËĞĞº¯Êı
-        pthread_create( &carN[i], NULL, crosingN, NULL ); //±±±ßµÄ³µÔËĞĞº¯Êı
-        pthread_create( &carS[i], NULL, crosingS, NULL ); //ÄÏ±ßµÄ³µÔËĞĞº¯Êı
+        pthread_create( &carE[i], NULL, crosingE, NULL ); //ä¸œè¾¹çš„è½¦è¿è¡Œå‡½æ•°
+        pthread_create( &carW[i], NULL, crosingW, NULL ); //è¥¿è¾¹çš„è½¦è¿è¡Œå‡½æ•°
+        pthread_create( &carN[i], NULL, crosingN, NULL ); //åŒ—è¾¹çš„è½¦è¿è¡Œå‡½æ•°
+        pthread_create( &carS[i], NULL, crosingS, NULL ); //å—è¾¹çš„è½¦è¿è¡Œå‡½æ•°
     }
 
     Sleep(10);
@@ -203,7 +201,7 @@ int main()
 
 
 /*
-ÔËĞĞ½á¹ûÊ¾Àı£º
+è¿è¡Œç»“æœç¤ºä¾‹ï¼š
 1 A car in the North passed the crossing and the id is:N4,current time:6
 2 A car in the South passed the crossing and the id is:N9,current time:14
 3 A car in the North passed the crossing and the id is:N12,current time:14
